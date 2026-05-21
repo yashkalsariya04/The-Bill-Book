@@ -8,7 +8,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   StatusBar,
@@ -16,6 +15,7 @@ import {
   TextInput,
   View
 } from "react-native";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { captureRef } from "react-native-view-shot";
 
 function createEmptyBill() {
@@ -208,162 +208,164 @@ export default function App() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaProvider>
       <StatusBar barStyle="dark-content" />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={styles.keyboard}
-      >
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.appName}>The Bill Book</Text>
-            <Text style={styles.subtitle}>Bricks purchase ledger</Text>
+      <SafeAreaView style={styles.safeArea} edges={["top", "left", "right", "bottom"]}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          style={styles.keyboard}
+        >
+          <View style={styles.header}>
+            <View>
+              <Text style={styles.appName}>The Bill Book</Text>
+              <Text style={styles.subtitle}>Bricks purchase ledger</Text>
+            </View>
+            <View style={styles.counter}>
+              <Text style={styles.counterNumber}>{bills.length}</Text>
+              <Text style={styles.counterLabel}>Bills</Text>
+            </View>
           </View>
-          <View style={styles.counter}>
-            <Text style={styles.counterNumber}>{bills.length}</Text>
-            <Text style={styles.counterLabel}>Bills</Text>
-          </View>
-        </View>
 
-        <View style={styles.tabs}>
-          <TabButton
-            icon="create-outline"
-            label="Create"
-            active={activeTab === "create"}
-            onPress={() => setActiveTab("create")}
-          />
-          <TabButton
-            icon="receipt-outline"
-            label="Bills"
-            active={activeTab === "bills"}
-            onPress={() => setActiveTab("bills")}
-          />
-        </View>
-
-        {activeTab === "create" ? (
-          <ScrollView
-            keyboardShouldPersistTaps="handled"
-            contentContainerStyle={styles.scrollContent}
-          >
-            <View style={styles.formPanel}>
-              <Input
-                label="Purchaser name"
-                value={form.purchaserName}
-                onChangeText={(value) => updateField("purchaserName", value)}
-                placeholder="Customer or company name"
-              />
-              <Input
-                label="Seller name"
-                value={form.sellerName}
-                onChangeText={(value) => updateField("sellerName", value)}
-                placeholder="Who is selling"
-              />
-              <View style={styles.row}>
-                <Input
-                  label="Quantity"
-                  value={form.quantity}
-                  onChangeText={(value) => updateField("quantity", value)}
-                  placeholder="10000"
-                  keyboardType="numeric"
-                  style={styles.rowInput}
-                />
-                <Input
-                  label="Price per brick"
-                  value={form.pricePerBrick}
-                  onChangeText={(value) => updateField("pricePerBrick", value)}
-                  placeholder="8.50"
-                  keyboardType="decimal-pad"
-                  style={styles.rowInput}
-                />
-              </View>
-              <View style={styles.row}>
-                <Input
-                  label="Vehicle number"
-                  value={form.vehicleNumber}
-                  onChangeText={(value) => updateField("vehicleNumber", value)}
-                  placeholder="MH 12 AB 1234"
-                  autoCapitalize="characters"
-                  style={styles.rowInput}
-                />
-                <Input
-                  label="Date"
-                  value={form.date}
-                  onChangeText={(value) => updateField("date", value)}
-                  placeholder="YYYY-MM-DD"
-                  style={styles.rowInput}
-                />
-              </View>
-              <Input
-                label="Signature"
-                value={form.signature}
-                onChangeText={(value) => updateField("signature", value)}
-                placeholder="Signed by"
-              />
-            </View>
-
-            <BillPreview refValue={previewRef} bill={form} total={total} />
-
-            <View style={styles.actions}>
-              <Pressable style={styles.primaryButton} onPress={saveBill} disabled={isSaving}>
-                <Ionicons name="save-outline" size={20} color="#fff" />
-                <Text style={styles.primaryButtonText}>
-                  {isSaving ? "Saving..." : "Save Bill"}
-                </Text>
-              </Pressable>
-              <Pressable style={styles.secondaryButton} onPress={sharePreview}>
-                <Ionicons name="share-social-outline" size={20} color="#16423c" />
-                <Text style={styles.secondaryButtonText}>Share Image</Text>
-              </Pressable>
-            </View>
-          </ScrollView>
-        ) : (
-          <View style={styles.listScreen}>
-            <View style={styles.searchBox}>
-              <Ionicons name="search-outline" size={20} color="#51635f" />
-              <TextInput
-                value={filter}
-                onChangeText={setFilter}
-                placeholder="Filter by purchaser or seller"
-                placeholderTextColor="#7f8b88"
-                style={styles.searchInput}
-              />
-            </View>
-
-            <FlatList
-              data={filteredBills}
-              keyExtractor={(item) => String(item.id)}
-              contentContainerStyle={styles.listContent}
-              ListEmptyComponent={
-                <View style={styles.emptyState}>
-                  <Ionicons name="document-text-outline" size={38} color="#8b938f" />
-                  <Text style={styles.emptyTitle}>No bills found</Text>
-                  <Text style={styles.emptyText}>
-                    Create a bill or adjust the purchaser/seller filter.
-                  </Text>
-                </View>
-              }
-              renderItem={({ item }) => (
-                <Pressable style={styles.billCard} onPress={() => loadBillIntoForm(item)}>
-                  <View style={styles.billCardHeader}>
-                    <View>
-                      <Text style={styles.billCardTitle}>{item.purchaserName}</Text>
-                      <Text style={styles.billCardMeta}>Seller: {item.sellerName}</Text>
-                    </View>
-                    <Text style={styles.billAmount}>{money(item.totalPrice)}</Text>
-                  </View>
-                  <View style={styles.billCardGrid}>
-                    <Meta label="Qty" value={formatNumber(item.quantity)} />
-                    <Meta label="Price" value={money(item.pricePerBrick)} />
-                    <Meta label="Vehicle" value={item.vehicleNumber} />
-                    <Meta label="Date" value={item.billDate} />
-                  </View>
-                </Pressable>
-              )}
+          <View style={styles.tabs}>
+            <TabButton
+              icon="create-outline"
+              label="Create"
+              active={activeTab === "create"}
+              onPress={() => setActiveTab("create")}
+            />
+            <TabButton
+              icon="receipt-outline"
+              label="Bills"
+              active={activeTab === "bills"}
+              onPress={() => setActiveTab("bills")}
             />
           </View>
-        )}
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+
+          {activeTab === "create" ? (
+            <ScrollView
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={styles.scrollContent}
+            >
+              <View style={styles.formPanel}>
+                <Input
+                  label="Purchaser name"
+                  value={form.purchaserName}
+                  onChangeText={(value) => updateField("purchaserName", value)}
+                  placeholder="Customer or company name"
+                />
+                <Input
+                  label="Seller name"
+                  value={form.sellerName}
+                  onChangeText={(value) => updateField("sellerName", value)}
+                  placeholder="Who is selling"
+                />
+                <View style={styles.row}>
+                  <Input
+                    label="Quantity"
+                    value={form.quantity}
+                    onChangeText={(value) => updateField("quantity", value)}
+                    placeholder="10000"
+                    keyboardType="numeric"
+                    style={styles.rowInput}
+                  />
+                  <Input
+                    label="Price per brick"
+                    value={form.pricePerBrick}
+                    onChangeText={(value) => updateField("pricePerBrick", value)}
+                    placeholder="8.50"
+                    keyboardType="decimal-pad"
+                    style={styles.rowInput}
+                  />
+                </View>
+                <View style={styles.row}>
+                  <Input
+                    label="Vehicle number"
+                    value={form.vehicleNumber}
+                    onChangeText={(value) => updateField("vehicleNumber", value)}
+                    placeholder="MH 12 AB 1234"
+                    autoCapitalize="characters"
+                    style={styles.rowInput}
+                  />
+                  <Input
+                    label="Date"
+                    value={form.date}
+                    onChangeText={(value) => updateField("date", value)}
+                    placeholder="YYYY-MM-DD"
+                    style={styles.rowInput}
+                  />
+                </View>
+                <Input
+                  label="Signature"
+                  value={form.signature}
+                  onChangeText={(value) => updateField("signature", value)}
+                  placeholder="Signed by"
+                />
+              </View>
+
+              <BillPreview refValue={previewRef} bill={form} total={total} />
+
+              <View style={styles.actions}>
+                <Pressable style={styles.primaryButton} onPress={saveBill} disabled={isSaving}>
+                  <Ionicons name="save-outline" size={20} color="#fff" />
+                  <Text style={styles.primaryButtonText}>
+                    {isSaving ? "Saving..." : "Save Bill"}
+                  </Text>
+                </Pressable>
+                <Pressable style={styles.secondaryButton} onPress={sharePreview}>
+                  <Ionicons name="share-social-outline" size={20} color="#16423c" />
+                  <Text style={styles.secondaryButtonText}>Share Image</Text>
+                </Pressable>
+              </View>
+            </ScrollView>
+          ) : (
+            <View style={styles.listScreen}>
+              <View style={styles.searchBox}>
+                <Ionicons name="search-outline" size={20} color="#51635f" />
+                <TextInput
+                  value={filter}
+                  onChangeText={setFilter}
+                  placeholder="Filter by purchaser or seller"
+                  placeholderTextColor="#7f8b88"
+                  style={styles.searchInput}
+                />
+              </View>
+
+              <FlatList
+                data={filteredBills}
+                keyExtractor={(item) => String(item.id)}
+                contentContainerStyle={styles.listContent}
+                ListEmptyComponent={
+                  <View style={styles.emptyState}>
+                    <Ionicons name="document-text-outline" size={38} color="#8b938f" />
+                    <Text style={styles.emptyTitle}>No bills found</Text>
+                    <Text style={styles.emptyText}>
+                      Create a bill or adjust the purchaser/seller filter.
+                    </Text>
+                  </View>
+                }
+                renderItem={({ item }) => (
+                  <Pressable style={styles.billCard} onPress={() => loadBillIntoForm(item)}>
+                    <View style={styles.billCardHeader}>
+                      <View>
+                        <Text style={styles.billCardTitle}>{item.purchaserName}</Text>
+                        <Text style={styles.billCardMeta}>Seller: {item.sellerName}</Text>
+                      </View>
+                      <Text style={styles.billAmount}>{money(item.totalPrice)}</Text>
+                    </View>
+                    <View style={styles.billCardGrid}>
+                      <Meta label="Qty" value={formatNumber(item.quantity)} />
+                      <Meta label="Price" value={money(item.pricePerBrick)} />
+                      <Meta label="Vehicle" value={item.vehicleNumber} />
+                      <Meta label="Date" value={item.billDate} />
+                    </View>
+                  </Pressable>
+                )}
+              />
+            </View>
+          )}
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </SafeAreaProvider>
   );
 }
 
